@@ -24,6 +24,10 @@ function Send-SlackApi
     .PARAMETER Proxy
         Proxy server to use
 
+    .PARAMETER Throw
+        If slack returns an error and the Parse-SlackError is invoke, this will for the error to be
+        thrown and not just written to the error log.
+
     .PARAMETER ForceVerbose
         If specified, don't explicitly remove verbose output from Invoke-RestMethod
 
@@ -58,6 +62,8 @@ function Send-SlackApi
         [string]$Token = $Script:PSSlack.Token,
 
         [string]$Proxy = $Script:PSSlack.Proxy,
+
+        [switch]$Throw = $false,
 
         [switch]$ForceVerbose = $Script:PSSlack.ForceVerbose
     )
@@ -101,7 +107,7 @@ function Send-SlackApi
         }
         elseif ($_.ErrorDetails.Message -ne $null) {
             # Convert the error-message to an object. (Invoke-RestMethod will not return data by-default if a 4xx/5xx status code is generated.)
-            $_.ErrorDetails.Message | ConvertFrom-Json | Parse-SlackError -Exception $_.Exception -ErrorAction Stop
+            $_.ErrorDetails.Message | ConvertFrom-Json | Parse-SlackError -Exception $_.Exception -ErrorAction Stop -Throw:$Throw
 
         }
         else {
@@ -112,7 +118,7 @@ function Send-SlackApi
     # Check to see if we have confirmation that our API call failed.
     # (Responses with exception-generating status codes are handled in the "catch" block above - this one is for errors that don't generate exceptions)
     if ($Response -ne $null -and $Response.ok -eq $False) {
-        $Response | Parse-SlackError
+        $Response | Parse-SlackError -Throw:$Throw
     }
     elseif($Response) {
         Write-Output $Response

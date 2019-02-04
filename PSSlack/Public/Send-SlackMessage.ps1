@@ -87,6 +87,14 @@ function Send-SlackMessage {
 
         See attachments spec https://api.slack.com/docs/attachments
 
+    .PARAMETER Ephemeral
+        Send the message as an Ephemeral message (ie. 'Only visible to you (the reciever)') instead
+        of a normal slack message that all people in the channel can see.
+
+    .PARAMETER Throw
+        If slack returns an error and the Parse-SlackError is invoke, this will for the error to be
+        thrown and not just written to the error log.
+
     .PARAMETER ForceVerbose
         If specified, don't explicitly remove verbose output from Invoke-RestMethod
 
@@ -300,6 +308,10 @@ function Send-SlackMessage {
         [PSTypeName('PSSlack.MessageAttachment')]
         [System.Collections.Hashtable[]]$Attachments,
 
+        [string]$EphemeralUser = $null,
+
+        [switch]$Throw = $false,
+
         [switch]$ForceVerbose = $Script:PSSlack.ForceVerbose
     )
     begin
@@ -354,7 +366,15 @@ function Send-SlackMessage {
                 }
 
                 Write-Verbose "Send-SlackApi -Body $($Message | Format-List | Out-String)"
-                $response = Send-SlackApi @ProxyParam -Method chat.postMessage -Body $Message -Token $Token -ForceVerbose:$ForceVerbose
+
+                if ($EphemeralUser) {
+                    $method = "chat.postEphemeral"
+                    $Message.user = $EphemeralUser
+                } else {
+                    $method = "chat.postMessage"
+                }
+                $response = Send-SlackApi @ProxyParam -Method $method -Body $Message -Token $Token -Throw:$Throw -ForceVerbose:$ForceVerbose
+
 
                 if ($response.ok)
                 {

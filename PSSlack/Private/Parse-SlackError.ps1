@@ -9,7 +9,9 @@ function Parse-SlackError {
         [Object]$ResponseObject,
 
         # The exception from Invoke-RestMethod, if available.
-        [Exception]$Exception
+        [Exception]$Exception,
+
+        [switch]$Throw = $false
     )
 
     Begin {
@@ -104,6 +106,17 @@ function Parse-SlackError {
         }
 
         Write-Error -ErrorId $ResponseObject.error @ErrorParams
+
+        if ($Throw) {
+            $ThrowMessage = $ErrorParams.Message
+            if ($ErrorParams.RecommendedAction) {
+                $ThrowMessage += " " + $ErrorParams.RecommendedAction
+            }
+
+            $throwEx = New-Object Exception $ThrowMessage, $Exception
+
+            throw $throwEx
+        }
     }
 
     end {
